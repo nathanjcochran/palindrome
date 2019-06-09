@@ -18,61 +18,58 @@ func main() {
 
 func longestPalindromes(word string) []string {
 	var (
-		lengths = make([]int, len(word)*2+1)
-		ref     int
-		max     int
+		lengths   = make([]int, len(word)*2+1) // Keeps track of palindrome length at each position in word
+		reference int                          // Index of reference palindrome in lengths slice
+		maxLength int                          // Length of longest palindrome found so far
+		results   []string                     // Max length palindromes found so far
 	)
-
-	for i := range lengths {
-		if i >= ref+lengths[ref] {
-			// If we're outside the reference palindrome, expand
-			var (
-				left  = i/2 - 1
-				right = (i + 1) / 2
-			)
-			for left >= 0 && right < len(word) && word[left] == word[right] {
-				left--
-				right++
-			}
-			lengths[i] = (right - left) - 1
-			ref = i
-			if lengths[i] > max {
-				max = lengths[i]
+	for position := range lengths {
+		var (
+			// Word indexes for expanding out
+			left  int
+			right int
+		)
+		if position < reference+lengths[reference] {
+			// If we're inside the reference palindrome, check the mirror palindrome
+			mirror := reference - (position - reference)
+			referenceRight := (reference-1)/2 + (lengths[reference] / 2)
+			right = (position-1)/2 + (lengths[mirror] / 2)
+			if referenceRight > right {
+				// Mirror palindrome is completely within reference palindrome
+				lengths[position] = lengths[mirror]
+				continue
+			} else if referenceRight < right {
+				// Mirror palindrome extends beyond reference palindrome
+				lengths[position] = lengths[mirror] - ((right - referenceRight) * 2)
+				continue
+			} else {
+				// Mirror palindrome extends exactly to end of reference palindrome,
+				// expand out starting at end of reference palindrome
+				left = position/2 - (lengths[mirror] / 2)
 			}
 		} else {
-			// Otherwise, check mirror palindrome
-			mir := ref - (i - ref)
-			refRight := (ref-1)/2 + (lengths[ref] / 2)
-			right := (i-1)/2 + (lengths[mir] / 2)
-			if refRight > right {
-				// Mirror palindrome is completely within reference palindrome
-				lengths[i] = lengths[mir]
-			} else if refRight < right {
-				// Mirror palindrome extends beyond reference palindrome
-				lengths[i] = lengths[mir] - ((right - refRight) * 2)
-			} else {
-				// Mirror palindrome extends exactly to end of reference palindrome
-				left := i/2 - (lengths[mir] / 2)
-				for left >= 0 && right < len(word) && word[left] == word[right] {
-					left--
-					right++
-				}
-				lengths[i] = (right - left) - 1
-				ref = i
-				if lengths[i] > max {
-					max = lengths[i]
-				}
-			}
+			// If we're outside the reference palindrome, just start expanding
+			// from either side of the position position
+			left = position/2 - 1
+			right = (position + 1) / 2
+		}
+
+		// Expand out
+		for left >= 0 && right < len(word) && word[left] == word[right] {
+			left--
+			right++
+		}
+		lengths[position] = (right - left) - 1
+		reference = position
+
+		// Keep track of max length palindromes found so far
+		if lengths[position] == maxLength {
+			results = append(results, word[left+1:right])
+		} else if lengths[position] > maxLength {
+			maxLength = lengths[position]
+			results = []string{word[left+1 : right]}
 		}
 	}
 
-	var results []string
-	for i, length := range lengths {
-		if length == max {
-			left := i/2 - length/2
-			right := (i+1)/2 + length/2
-			results = append(results, word[left:right])
-		}
-	}
 	return results
 }
